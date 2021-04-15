@@ -13,9 +13,9 @@ app.get("/tyres", async (req, res) => {
     try {
         const { brand, title, size } = req.query;
         const filters = {
-            brand: brand && brand.toLowerCase(),
+            brand: brand,
             title: title && title.toLowerCase(),
-            size: size && size.toLowerCase()
+            size: size
         };
         const mongo = await mongoClient.connect(connectionString, {useUnifiedTopology: true, ignoreUndefined: true});
         const tyresCollection = mongo.db("tyres_db").collection("tyres");
@@ -35,8 +35,6 @@ app.get("/tyres", async (req, res) => {
                 tyres[i]["brand"] = brand;
             }
         }
-
-
 
         mongo.close();
         res.status(200).send(tyres);
