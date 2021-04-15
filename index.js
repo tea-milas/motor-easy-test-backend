@@ -12,16 +12,22 @@ const connectionString =  process.env.CONNECTION_STRING;
 app.get("/tyres", async (req, res) => {
     try {
         const { brand, title, size } = req.query;
+        const filters = {
+            brand: brand && brand.toLowerCase(),
+            title: title && title.toLowerCase(),
+            size: size && size.toLowerCase()
+        };
         const mongo = await mongoClient.connect(connectionString, {useUnifiedTopology: true, ignoreUndefined: true});
         const tyresCollection = mongo.db("tyres_db").collection("tyres");
         const brandsCollection = mongo.db("tyres_db").collection("brands");
-        const tyres = await tyresCollection.find({brand, title, size}).toArray();
+        const tyres = await tyresCollection.find({...filters}).toArray();
         const brands = [];
 
         for (let i = 0; i < tyres.length; i++) {
             const brandId = tyres[i]["brand_id"];
-            if(!brands.includes(brandId)) {
-                const brand = await brandsCollection.findOne({_id: brandId});
+            let brand = brands.filter( b => b["_id"] === brandId);
+            if(brand.length === 0) {
+                brand = await brandsCollection.findOne({_id: brandId});
                 brands.push(brand);
                 delete tyres[i]["brand_id"];
                 tyres[i]["brand"] = brand;
@@ -30,8 +36,10 @@ app.get("/tyres", async (req, res) => {
             }
         }
 
+
+
         mongo.close();
-        res.send(tyres);
+        res.status(200).send(tyres);
 
     } catch (err) {
         console.error("Failed to fetch tyres ", err);
@@ -47,10 +55,25 @@ app.get("/brands", async (req, res) => {
         const brands = await brandsCollection.find({title}).toArray();
 
         mongo.close();
-        res.send(brands);
+        res.status(200).send(brands);
 
     } catch (err) {
         console.error("Failed to fetch brands ", err);
+        res.status(500).send("Something went wrong");
+    }
+});
+
+app.get("/tyres/sizes", async (req, res) => {
+    try {
+        const mongo = await mongoClient.connect(connectionString, {useUnifiedTopology: true, ignoreUndefined: true});
+        const tyresCollection = mongo.db("tyres_db").collection("tyres");
+        const tyres = await tyresCollection.find({}).toArray();
+        let sizes =[...new Set(tyres.map(tyre => tyre.size))] ;
+        mongo.close();
+        res.status(200).send(sizes);
+
+    } catch (err) {
+        console.error("Failed to fetch sizes ", err);
         res.status(500).send("Something went wrong");
     }
 });
