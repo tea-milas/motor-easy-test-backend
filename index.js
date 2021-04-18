@@ -11,16 +11,17 @@ const connectionString =  process.env.CONNECTION_STRING;
 
 app.get("/tyres", async (req, res) => {
     try {
-        const { brand, title, size } = req.query;
+        const { brand, title, size, page = 1, limit = 6 } = req.query;
         const filters = {
             brand: brand,
             title: title && title.toLowerCase(),
             size: size
         };
+        
         const mongo = await mongoClient.connect(connectionString, {useUnifiedTopology: true, ignoreUndefined: true});
         const tyresCollection = mongo.db("tyres_db").collection("tyres");
         const brandsCollection = mongo.db("tyres_db").collection("brands");
-        const tyres = await tyresCollection.find({...filters}).toArray();
+        const tyres = await tyresCollection.find({...filters}).limit(limit * 1).skip((page-1) * limit).toArray();
         const brands = [];
 
         for (let i = 0; i < tyres.length; i++) {
